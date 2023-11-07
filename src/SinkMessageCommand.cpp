@@ -12,20 +12,10 @@ namespace lgr3k
         : mMsg(std::move(msg))
         , mCallback(std::move(callback))
     {
-
     }
 
     void SinkMessageCommand::execute()
     {
-        #ifdef DEBUG
-        std::cout<<__PRETTY_FUNCTION__
-                <<mMsg<<std::endl;
-        #endif
+        mCallback(mMsg);
     }
-
-    CommandType SinkMessageCommand::getType() const
-    {
-        return CommandType::SINK_MESSAGE;
-    }
-
 } // namespace lgr3k

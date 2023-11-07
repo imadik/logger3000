@@ -2,6 +2,7 @@
 
 #include "InnerTypes.h"
 #include "ISink.h"
+#include <memory>
 
 namespace lgr3k
 {
@@ -10,6 +11,6 @@ namespace lgr3k
     public:
         virtual ~IInstance() = default;
         virtual void saveLog(MessageWithInfo msg) = 0;
-        virtual void addSink(std::unique_ptr<ISink> sink) = 0;
+        virtual void addSink(std::shared_ptr<ISink> sink) = 0;
     };
 }

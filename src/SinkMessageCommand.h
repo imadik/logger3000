@@ -11,7 +11,7 @@ namespace lgr3k
     public:
         SinkMessageCommand(std::string msg, std::function<void(std::string)> callback);
         void execute() override;
-        CommandType getType() const override;
+
     private:
         std::string mMsg;
         std::function<void(std::string)> mCallback;

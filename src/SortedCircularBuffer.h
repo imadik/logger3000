@@ -50,8 +50,6 @@ namespace lgr3k
         }
     }
 
-
-
     template<class T>
     void SortedCircularBuffer<T>::reset()
     {
@@ -67,8 +65,11 @@ namespace lgr3k
     template<class T>
     void SortedCircularBuffer<T>::popToCallback()
     {
-        mPopCallback(std::move(mBuffer.front()));
-        mBuffer.pop_front();
+        if (!isEmpty())
+        {
+            mPopCallback(std::move(mBuffer.front()));
+            mBuffer.pop_front();
+        }
     }
 
     template<class T>

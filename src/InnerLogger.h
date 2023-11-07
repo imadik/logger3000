@@ -8,28 +8,19 @@
 #include <thread>
 #include <mutex>
 #include <queue>
-#ifdef DEBUG
-#include <iostream>
-#include <iomanip>
 
-#endif
 #include "source_location/source_location.hpp"
 
 namespace lgr3k
 {
-    
-
-
-    
     class LoggerLog
     {
     public:
-        LoggerLog(LogLevel logLevel, source_location sourceLocation, std::chrono::time_point<std::chrono::steady_clock> time)
-            : mSourceLocation(sourceLocation)
-            , mLogLevel(logLevel)
-            , mTime(time)
+        LoggerLog(LogLevel logLevel, source_location sourceLocation, 
+            std::chrono::time_point<std::chrono::steady_clock> time)
+            : mMsg{std::move(logLevel), std::move(time), std::this_thread::get_id(), 
+                std::move(sourceLocation), {}}
         {
-            mThreadId = std::this_thread::get_id();
         };
         virtual ~LoggerLog();
 
@@ -58,11 +49,11 @@ namespace lgr3k
         LGR_STREAM(const char*)
         LGR_STREAM(const void*)
         LGR_STREAM(long double)
+
         inline LoggerLog& operator<<(const std::wstring& msg)
         {
             return operator<<(msg.c_str());
         }
-        LoggerLog& operator<<(const wchar_t* msg);
 
     private:
         std::ostringstream &stream() 
@@ -71,16 +62,13 @@ namespace lgr3k
         }
 
         std::ostringstream mStream;
-        source_location mSourceLocation;
-        LogLevel mLogLevel;
-        std::chrono::time_point<std::chrono::steady_clock> mTime;
-        std::thread::id mThreadId;
+        MessageWithInfo mMsg;
     };
 
 
-    class LoggerInstance;
+    class IInstance;
 
-    void initLogger(LoggerInstance* instance);
+    void initLogger(IInstance* instance);
     void finishLogger();
     void saveLog(MessageWithInfo msg);
 }

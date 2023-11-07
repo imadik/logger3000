@@ -1,67 +1,67 @@
 #include "LoggerInstance.h"
-#include "SaveMessageCommand.h"
+#include "AddSinkCommand.h"
 #include "FormatMessageCommand.h"
+#include "SaveMessageCommand.h"
 #include "SinkMessageCommand.h"
+#include "DefaultFormatter.h"
+#include "DefaultFilter.h"
+#include "DefaultSink.h"
 #include <mutex>
 #include <functional>
-
-#ifdef DEBUG
-#include <iostream>
-#include <iomanip>
-
-#endif
 
 namespace lgr3k
 {
 
-    LoggerInstance::LoggerInstance(std::size_t bufferSize)
-        : mSortedCircularBuffer(bufferSize, std::bind(&LoggerInstance::popCallback, this, std::placeholders::_1))
+    LoggerInstance::LoggerInstance(std::size_t bufferSize,
+        std::shared_ptr<IFilter> filter,
+        std::shared_ptr<IFormatter> formatter,
+        std::shared_ptr<ISink> sink)
+        : mSortedCircularBuffer(bufferSize, std::bind(&LoggerInstance::popMsgImpl, this, std::placeholders::_1))
     {
-
+        if (!filter)
+        {
+            mFilter = std::make_shared<DefaultFilter>();
+        }
+        if (!formatter)
+        {
+            mFormatter = std::make_shared<DefaultFormatter>();
+        }
+        if (!sink)
+        {
+            mSinkVector.push_back(std::make_shared<DefaultSink>());
+        }
     }
 
     void LoggerInstance::saveLog(MessageWithInfo msg)
     {
-        #ifdef DEBUG
-        std::cout<<__PRETTY_FUNCTION__
-                <<msg.threadId<<" "
-                <<msg.time.time_since_epoch().count()<<" "
-                <<msg.logLevel.getStr()<<" "
-                <<msg.sourceLocation.file_name()<<" "
-                <<msg.sourceLocation.line()<<" "
-                <<msg.sourceLocation.function_name()<<" "
-                <<msg.text<<std::endl;
-        #endif
         mCommandsQueue.addCommand(std::unique_ptr<SaveMessageCommand>(new SaveMessageCommand(std::move(msg), 
-            std::bind(&LoggerInstance::saveMsgCallback, this, std::placeholders::_1))));
-        // mCommandsQueue.addCommand();
-        // std::lock_guard<std::mutex> lock(mMutex);
-        // mMessages.push(std::move(msg));
+            mFilter, std::bind(&LoggerInstance::saveMsgImpl, this, std::placeholders::_1))));
     }
 
-    void LoggerInstance::addSink(std::unique_ptr<ISink> sink)
+    void LoggerInstance::addSink(std::shared_ptr<ISink> sink)
     {
-        mSinkVector.push_back(std::move(sink));
+        mCommandsQueue.addCommand(std::unique_ptr<AddSinkCommand>(new AddSinkCommand(std::move(sink), 
+            std::bind(&LoggerInstance::addSinkImpl, this, std::placeholders::_1))));
     }
 
-    void LoggerInstance::saveMsgCallback(MessageWithInfo msg)
+    void LoggerInstance::saveMsgImpl(MessageWithInfo msg)
     {
         mSortedCircularBuffer.put(std::move(msg));
     }
 
-    void LoggerInstance::popCallback(MessageWithInfo msg)
+    void LoggerInstance::popMsgImpl(MessageWithInfo msg)
     {
         mCommandsQueue.addCommand(std::unique_ptr<FormatMessageCommand>(new FormatMessageCommand(std::move(msg), 
-            std::bind(&LoggerInstance::formatedMsgCallback, this, std::placeholders::_1))));
+            mFormatter, std::bind(&LoggerInstance::formatMsgImpl, this, std::placeholders::_1))));
     }
 
-    void LoggerInstance::formatedMsgCallback(std::string msg)
+    void LoggerInstance::formatMsgImpl(std::string msg)
     {
         mCommandsQueue.addCommand(std::unique_ptr<SinkMessageCommand>(new SinkMessageCommand(std::move(msg), 
-            std::bind(&LoggerInstance::pushToAllSinksCallback, this, std::placeholders::_1))));
+            std::bind(&LoggerInstance::pushToAllSinksImpl, this, std::placeholders::_1))));
     }
 
-    void LoggerInstance::pushToAllSinksCallback(std::string msg)
+    void LoggerInstance::pushToAllSinksImpl(std::string msg)
     {
         for (const auto& sink : mSinkVector)
         {
@@ -69,4 +69,20 @@ namespace lgr3k
         }
     }
 
+    void LoggerInstance::addSinkImpl(std::shared_ptr<ISink> sink)
+    {
+        bool repeated = false;
+        for (const auto& existingSink : mSinkVector)
+        {
+            if (existingSink == sink)
+            {
+                repeated = true;
+                break;
+            }
+        }    
+        if (!repeated)
+        {
+            mSinkVector.push_back(std::move(sink));
+        }
+    }
 }

@@ -25,17 +25,15 @@ namespace lgr3kTest
 
     TEST_F(Logger3000Test, simple_test)
     {
-        std::unique_ptr<lgr3k::LoggerInstance> instance(new lgr3k::LoggerInstance(3));
+        std::unique_ptr<lgr3k::LoggerInstance> instance(new lgr3k::LoggerInstance(3, nullptr, nullptr, nullptr));
         lgr3k::initLogger3000(instance.get());
         lgr3k::LogDebug()<<"test1";
         lgr3k::LogDebug()<<"test2";
         lgr3k::LogDebug()<<"test3";
         lgr3k::LogDebug()<<"test4";
         lgr3k::LogDebug()<<"test5";
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));
         lgr3k::finishLogger3000();
+        instance.reset();
     }
 }

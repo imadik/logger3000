@@ -4,27 +4,37 @@
 #include "InnerTypes.h"
 #include "CommandsQueue.h"
 #include "SortedCircularBuffer.h"
-#include <mutex>
 #include <vector>
+#include <memory>
 
 namespace lgr3k
 {
+    class IFilter;
+    class IFormatter;
+    class ISink;
     class LoggerInstance : public IInstance
     {
     public:
-        LoggerInstance(std::size_t bufferSize);
+        LoggerInstance(std::size_t bufferSize,
+            std::shared_ptr<IFilter> filter,
+            std::shared_ptr<IFormatter> formatter,
+            std::shared_ptr<ISink> sink);
  
         void saveLog(MessageWithInfo msg) override;
-        void addSink(std::unique_ptr<ISink> sink) override;
-    private:
-        void popCallback(MessageWithInfo msg);
-        void saveMsgCallback(MessageWithInfo msg);
-        void formatedMsgCallback(std::string msg);
-        void pushToAllSinksCallback(std::string msg);
+        void addSink(std::shared_ptr<ISink> sink) override;
 
-        std::mutex mMutex;
-        CommandsQueue mCommandsQueue;
+    private:
+        void addSinkImpl(std::shared_ptr<ISink> sink);
+        void popMsgImpl(MessageWithInfo msg);
+        void saveMsgImpl(MessageWithInfo msg);
+        void formatMsgImpl(std::string msg);
+        void pushToAllSinksImpl(std::string msg);
+
+        std::vector<std::shared_ptr<ISink>> mSinkVector;
+        std::shared_ptr<IFilter> mFilter;
+        std::shared_ptr<IFormatter> mFormatter;
         SortedCircularBuffer<MessageWithInfo> mSortedCircularBuffer; //
-        std::vector<std::unique_ptr<ISink>> mSinkVector;
+        CommandsQueue mCommandsQueue;
+
     };
 }

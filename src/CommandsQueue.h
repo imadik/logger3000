@@ -1,13 +1,12 @@
 #pragma once
 
-#include "InnerTypes.h"
 #include "Interfaces/ICommand.h"
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <queue>
 #include <atomic>
 #include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <thread>
 
 namespace lgr3k
 {
