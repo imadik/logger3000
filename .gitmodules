@@ -1,0 +1,3 @@
+[submodule "libs/source_location"]
+	path = libs/source_location
+	url = git@github.com:flagarde/source_location.git
